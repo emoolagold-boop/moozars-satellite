@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOOZARS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#050508;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;color:#d0f0e8;-webkit-font-smoothing:antialiased}
+
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
+
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+
+.brand{font-size:13px;letter-spacing:6px;color:rgba(0,229,160,0.35);text-transform:uppercase;position:absolute;top:32px;left:50%;transform:translateX(-50%);opacity:0;animation:fadeIn 2s ease 1.5s forwards}
+
+.title-block{text-align:center;opacity:0;animation:riseIn 2.2s ease 0.8s forwards}
+
+.title-main{font-size:clamp(42px,7vw,72px);font-weight:700;letter-spacing:3px;color:#00E5A0;line-height:1.1;text-shadow:0 0 60px rgba(0,229,160,0.15)}
+
+.title-sub{font-size:clamp(13px,2vw,17px);letter-spacing:2.5px;color:rgba(0,229,160,0.45);margin-top:16px;font-weight:300;text-transform:uppercase;line-height:1.6}
+
+.bottom-bar{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:40px;align-items:center;opacity:0;animation:fadeIn 2s ease 2.5s forwards}
+
+.stat{text-align:center}
+.stat-value{font-size:11px;letter-spacing:3px;color:rgba(0,229,160,0.5);text-transform:uppercase}
+.stat-label{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.18);margin-top:3px;text-transform:uppercase}
+
+.separator{width:1px;height:20px;background:rgba(0,229,160,0.12)}
+
+.pulse-ring{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:rgba(0,229,160,0.3);opacity:0;animation:fadeIn 2s ease 3s forwards}
+.pulse-ring::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:1px solid rgba(0,229,160,0.08);border-radius:50%;animation:pulseExpand 3s ease-in-out infinite}
+.pulse-ring::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border:1px solid rgba(0,229,160,0.04);border-radius:50%;animation:pulseExpand 3s ease-in-out 1s infinite}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes riseIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseExpand{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}
+
+/* Subtle vignette */
+.vignette{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(5,5,8,0.7) 100%)}
+</style>
+</head>
+<body>
+
+<canvas id="globe"></canvas>
+<div class="vignette"></div>
+
+<div class="overlay">
+    <div class="brand">MOOZARS</div>
+
+    <div class="title-block">
+        <div class="title-main">MOOZARS</div>
+        <div class="title-sub">Innovation in Financial Data<br>&amp; Market Intelligence</div>
+    </div>
+
+    <div class="pulse-ring"></div>
+
+    <div class="bottom-bar">
+        <div class="stat">
+            <div class="stat-value">Active</div>
+            <div class="stat-label">Infrastructure</div>
+        </div>
+        <div class="separator"></div>
+        <div class="stat">
+            <div class="stat-value">Global</div>
+            <div class="stat-label">Data Coverage</div>
+        </div>
+        <div class="separator"></div>
+        <div class="stat">
+            <div class="stat-value">Resilient</div>
+            <div class="stat-label">Connectivity</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy, radius;
+let mouse = {x:0.5, y:0.5};
+let time = 0;
+
+function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W / 2;
+    cy = H / 2;
+    radius = Math.min(W, H) * 0.28;
+}
+
+resize();
+window.addEventListener('resize', resize);
+
+document.addEventListener('mousemove', function(e){
+    mouse.x = e.clientX / W;
+    mouse.y = e.clientY / H;
+});
+
+// Generate world landmass points (simplified continental outlines)
+function generateLandPoints(){
+    const pts = [];
+    // Approximate continental shapes using lat/lng clusters
+    const regions = [
+        // North America
+        {latMin:25,latMax:70,lngMin:-130,lngMax:-60,density:0.08},
+        // South America
+        {latMin:-55,latMax:12,lngMin:-80,lngMax:-35,density:0.07},
+        // Europe
+        {latMin:35,latMax:70,lngMin:-10,lngMax:40,density:0.1},
+        // Africa
+        {latMin:-35,latMax:37,lngMin:-18,lngMax:52,density:0.07},
+        // Asia
+        {latMin:10,latMax:70,lngMin:60,lngMax:145,density:0.06},
+        // Australia
+        {latMin:-40,latMax:-12,lngMin:112,lngMax:155,density:0.06},
+        // Middle East
+        {latMin:12,latMax:42,lngMin:25,lngMax:65,density:0.05},
+    ];
+
+    for(const r of regions){
+        const area = (r.latMax - r.latMin) * (r.lngMax - r.lngMin);
+        const count = Math.floor(area * r.density);
+        for(let i = 0; i < count; i++){
+            const lat = (r.latMin + Math.random() * (r.latMax - r.latMin)) * Math.PI / 180;
+            const lng = (r.lngMin + Math.random() * (r.lngMax - r.lngMin)) * Math.PI / 180;
+            pts.push({lat, lng});
+        }
+    }
+    return pts;
+}
+
+const landPoints = generateLandPoints();
+
+// Satellites
+const satellites = [];
+for(let i = 0; i < 8; i++){
+    satellites.push({
+        inclination: (20 + Math.random() * 60) * Math.PI / 180,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.15 + Math.random() * 0.2,
+        altitude: 1.2 + Math.random() * 0.35,
+        size: 1.5 + Math.random() * 1,
+        trail: []
+    });
+}
+
+// Grid lines (meridians and parallels)
+function drawGlobe(t){
+    const rotY = t * 0.08 + (mouse.x - 0.5) * 0.6;
+    const tiltX = -0.3 + (mouse.y - 0.5) * 0.3;
+
+    const cosRY = Math.cos(rotY);
+    const sinRY = Math.sin(rotY);
+    const cosTX = Math.cos(tiltX);
+    const sinTX = Math.sin(tiltX);
+
+    function project(lat, lng, alt){
+        const r = radius * (alt || 1);
+        const x3 = r * Math.cos(lat) * Math.sin(lng);
+        const y3 = r * Math.sin(lat);
+        const z3 = r * Math.cos(lat) * Math.cos(lng);
+
+        // Rotate Y
+        const x1 = x3 * cosRY + z3 * sinRY;
+        const z1 = -x3 * sinRY + z3 * cosRY;
+        // Tilt X
+        const y1 = y3 * cosTX - z1 * sinTX;
+        const z2 = y3 * sinTX + z1 * cosTX;
+
+        return {x: cx + x1, y: cy - y1, z: z2, visible: z2 > 0};
+    }
+
+    // Background glow
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 2.5);
+    grd.addColorStop(0, 'rgba(0,229,160,0.02)');
+    grd.addColorStop(0.3, 'rgba(0,229,160,0.008)');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Globe outline
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,229,160,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Atmospheric glow
+    const atm = ctx.createRadialGradient(cx, cy, radius * 0.95, cx, cy, radius * 1.15);
+    atm.addColorStop(0, 'rgba(0,229,160,0.03)');
+    atm.addColorStop(0.5, 'rgba(0,229,160,0.015)');
+    atm.addColorStop(1, 'transparent');
+    ctx.fillStyle = atm;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Grid lines - meridians
+    for(let lng = -180; lng < 180; lng += 30){
+        ctx.beginPath();
+        let started = false;
+        for(let lat = -90; lat <= 90; lat += 3){
+            const p = project(lat * Math.PI / 180, lng * Math.PI / 180);
+            if(p.visible){
+                if(!started){ctx.moveTo(p.x, p.y); started = true;}
+                else ctx.lineTo(p.x, p.y);
+            } else { started = false; }
+        }
+        ctx.strokeStyle = 'rgba(0,229,160,0.025)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    }
+
+    // Grid lines - parallels
+    for(let lat = -60; lat <= 60; lat += 30){
+        ctx.beginPath();
+        let started = false;
+        for(let lng = 0; lng <= 360; lng += 3){
+            const p = project(lat * Math.PI / 180, lng * Math.PI / 180);
+            if(p.visible){
+                if(!started){ctx.moveTo(p.x, p.y); started = true;}
+                else ctx.lineTo(p.x, p.y);
+            } else { started = false; }
+        }
+        ctx.strokeStyle = 'rgba(0,229,160,0.02)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    }
+
+    // Land points
+    for(const pt of landPoints){
+        const p = project(pt.lat, pt.lng);
+        if(!p.visible) continue;
+        const depth = Math.max(0, p.z / radius);
+        const alpha = 0.08 + depth * 0.22;
+        ctx.fillStyle = `rgba(0,229,160,${alpha})`;
+        ctx.fillRect(p.x - 0.8, p.y - 0.8, 1.6, 1.6);
+    }
+
+    // Satellites
+    for(const sat of satellites){
+        const angle = t * sat.speed + sat.phase;
+        const lat = Math.asin(Math.sin(sat.inclination) * Math.sin(angle));
+        const lng = Math.atan2(
+            Math.cos(sat.inclination) * Math.sin(angle),
+            Math.cos(angle)
+        );
+        const p = project(lat, lng, sat.altitude);
+
+        // Trail
+        sat.trail.push({x: p.x, y: p.y, z: p.z, v: p.visible, a: 1});
+        if(sat.trail.length > 30) sat.trail.shift();
+
+        // Draw trail
+        for(let i = 0; i < sat.trail.length - 1; i++){
+            const tp = sat.trail[i];
+            if(!tp.v) continue;
+            const alpha = (i / sat.trail.length) * 0.15;
+            ctx.beginPath();
+            ctx.arc(tp.x, tp.y, 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0,229,160,${alpha})`;
+            ctx.fill();
+        }
+
+        // Draw satellite
+        if(p.visible){
+            // Glow
+            const sg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 12);
+            sg.addColorStop(0, 'rgba(0,229,160,0.25)');
+            sg.addColorStop(0.5, 'rgba(0,229,160,0.05)');
+            sg.addColorStop(1, 'transparent');
+            ctx.fillStyle = sg;
+            ctx.fillRect(p.x - 12, p.y - 12, 24, 24);
+
+            // Core
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, sat.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,229,160,0.7)';
+            ctx.fill();
+
+            // Connection line to globe surface
+            const sp = project(lat, lng, 1);
+            if(sp.visible){
+                ctx.beginPath();
+                ctx.moveTo(sp.x, sp.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = 'rgba(0,229,160,0.04)';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+
+                // Surface point
+                ctx.beginPath();
+                ctx.arc(sp.x, sp.y, 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,229,160,0.15)';
+                ctx.fill();
+            }
+        }
+    }
+
+    // Data connection arcs (occasional flashes between satellites)
+    if(Math.sin(t * 0.7) > 0.8){
+        for(let i = 0; i < satellites.length - 1; i += 3){
+            const s1 = satellites[i];
+            const s2 = satellites[i + 1];
+            const a1 = t * s1.speed + s1.phase;
+            const a2 = t * s2.speed + s2.phase;
+            const p1 = project(
+                Math.asin(Math.sin(s1.inclination) * Math.sin(a1)),
+                Math.atan2(Math.cos(s1.inclination) * Math.sin(a1), Math.cos(a1)),
+                s1.altitude
+            );
+            const p2 = project(
+                Math.asin(Math.sin(s2.inclination) * Math.sin(a2)),
+                Math.atan2(Math.cos(s2.inclination) * Math.sin(a2), Math.cos(a2)),
+                s2.altitude
+            );
+            if(p1.visible && p2.visible){
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2 - 30;
+                ctx.quadraticCurveTo(mx, my, p2.x, p2.y);
+                const flash = (Math.sin(t * 3) + 1) * 0.04;
+                ctx.strokeStyle = `rgba(0,229,160,${flash})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+}
+
+// Floating particles
+const particles = [];
+for(let i = 0; i < 40; i++){
+    particles.push({
+        x: Math.random() * 2000,
+        y: Math.random() * 2000,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        size: Math.random() * 1.2,
+        alpha: Math.random() * 0.08
+    });
+}
+
+function drawParticles(){
+    for(const p of particles){
+        p.x += p.vx;
+        p.y += p.vy;
+        if(p.x < 0) p.x = W;
+        if(p.x > W) p.x = 0;
+        if(p.y < 0) p.y = H;
+        if(p.y > H) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,229,160,${p.alpha})`;
+        ctx.fill();
+    }
+}
+
+function frame(){
+    ctx.clearRect(0, 0, W, H);
+
+    // Deep background
+    ctx.fillStyle = '#050508';
+    ctx.fillRect(0, 0, W, H);
+
+    drawParticles();
+    drawGlobe(time);
+
+    time += 0.016;
+    requestAnimationFrame(frame);
+}
+
+frame();
+})();
+</script>
+</body>
+</html>

@@ -49,153 +49,342 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
     <div class="brand">MOOZARS</div>
 
     <div class="title-block">
-        <div class="title-main">Global Settlement<br>Infrastructure</div>
-        <div class="title-sub">Satellite-Resilient · Commodity Markets · Real-Time</div>
-    </div>
-
-    <div class="bottom-bar">
-        <div class="stat">
-            <div class="stat-value">99.9%</div>
-            <div class="stat-label">Uptime</div>
-        </div>
-        <div class="separator"></div>
-        <div class="stat">
-            <div class="stat-value">24/7</div>
-            <div class="stat-label">Global</div>
-        </div>
-        <div class="separator"></div>
-        <div class="stat">
-            <div class="stat-value">Live</div>
-            <div class="stat-label">Network</div>
-        </div>
+        <div class="title-main">MOOZARS</div>
+        <div class="title-sub">Innovation in Financial Data<br>&amp; Market Intelligence</div>
     </div>
 
     <div class="pulse-ring"></div>
+
+    <div class="bottom-bar">
+        <div class="stat">
+            <div class="stat-value">Active</div>
+            <div class="stat-label">Infrastructure</div>
+        </div>
+        <div class="separator"></div>
+        <div class="stat">
+            <div class="stat-value">Global</div>
+            <div class="stat-label">Data Coverage</div>
+        </div>
+        <div class="separator"></div>
+        <div class="stat">
+            <div class="stat-value">Resilient</div>
+            <div class="stat-label">Connectivity</div>
+        </div>
+    </div>
 </div>
 
 <script>
 (function(){
 'use strict';
 
-const c=document.getElementById('globe');
-const ctx=c.getContext('2d',{alpha:false});
-let w,h,cx,cy,R;
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy, radius;
+let mouse = {x:0.5, y:0.5};
+let time = 0;
 
 function resize(){
-    const dpr=Math.min(window.devicePixelRatio||1,2);
-    w=window.innerWidth;h=window.innerHeight;
-    c.width=w*dpr;c.height=h*dpr;
-    c.style.width=w+'px';c.style.height=h+'px';
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    cx=w/2;cy=h/2;
-    R=Math.min(w,h)*0.32;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W / 2;
+    cy = H / 2;
+    radius = Math.min(W, H) * 0.28;
 }
+
 resize();
-window.addEventListener('resize',resize);
+window.addEventListener('resize', resize);
 
-let time=0;
-const rotSpeed=0.0008;
+document.addEventListener('mousemove', function(e){
+    mouse.x = e.clientX / W;
+    mouse.y = e.clientY / H;
+});
 
-// Simplified land coordinates (major continents)
-const land=[
-    // North America
-    {lat:49,lng:-95},{lat:45,lng:-75},{lat:40,lng:-100},{lat:35,lng:-80},{lat:30,lng:-110},{lat:25,lng:-100},
-    // South America
-    {lat:-5,lng:-60},{lat:-15,lng:-50},{lat:-25,lng:-60},{lat:-35,lng:-70},
-    // Europe
-    {lat:55,lng:10},{lat:50,lng:15},{lat:45,lng:25},{lat:60,lng:25},{lat:50,lng:-5},
-    // Africa
-    {lat:10,lng:20},{lat:0,lng:30},{lat:-10,lng:25},{lat:-20,lng:20},{lat:-30,lng:25},
-    // Asia
-    {lat:60,lng:90},{lat:50,lng:100},{lat:40,lng:110},{lat:30,lng:80},{lat:20,lng:100},{lat:35,lng:135},
-    // Australia
-    {lat:-25,lng:135},{lat:-30,lng:145},{lat:-35,lng:140}
-];
+// Generate world landmass points (simplified continental outlines)
+function generateLandPoints(){
+    const pts = [];
+    // Approximate continental shapes using lat/lng clusters
+    const regions = [
+        // North America
+        {latMin:25,latMax:70,lngMin:-130,lngMax:-60,density:0.08},
+        // South America
+        {latMin:-55,latMax:12,lngMin:-80,lngMax:-35,density:0.07},
+        // Europe
+        {latMin:35,latMax:70,lngMin:-10,lngMax:40,density:0.1},
+        // Africa
+        {latMin:-35,latMax:37,lngMin:-18,lngMax:52,density:0.07},
+        // Asia
+        {latMin:10,latMax:70,lngMin:60,lngMax:145,density:0.06},
+        // Australia
+        {latMin:-40,latMax:-12,lngMin:112,lngMax:155,density:0.06},
+        // Middle East
+        {latMin:12,latMax:42,lngMin:25,lngMax:65,density:0.05},
+    ];
 
-const landRad=land.map(p=>({lat:p.lat*Math.PI/180,lng:p.lng*Math.PI/180}));
-
-// Latitude/longitude grid
-const lats=[];for(let lat=-60;lat<=60;lat+=30)lats.push(lat*Math.PI/180);
-const lngs=[];for(let lng=-180;lng<180;lng+=40)lngs.push(lng*Math.PI/180);
-
-function proj(lat,lng,rot){
-    const x3=R*Math.cos(lat)*Math.sin(lng+rot);
-    const y3=R*Math.sin(lat);
-    const z3=R*Math.cos(lat)*Math.cos(lng+rot);
-    
-    const tilt=-0.2;
-    const cosT=Math.cos(tilt),sinT=Math.sin(tilt);
-    const y2=y3*cosT-z3*sinT;
-    const z2=y3*sinT+z3*cosT;
-    
-    return{x:cx+x3,y:cy-y2,z:z2,v:z2>0};
+    for(const r of regions){
+        const area = (r.latMax - r.latMin) * (r.lngMax - r.lngMin);
+        const count = Math.floor(area * r.density);
+        for(let i = 0; i < count; i++){
+            const lat = (r.latMin + Math.random() * (r.latMax - r.latMin)) * Math.PI / 180;
+            const lng = (r.lngMin + Math.random() * (r.lngMax - r.lngMin)) * Math.PI / 180;
+            pts.push({lat, lng});
+        }
+    }
+    return pts;
 }
 
-function draw(){
-    time+=rotSpeed;
-    
-    ctx.fillStyle='#050508';
-    ctx.fillRect(0,0,w,h);
-    
-    // Outer ring
+const landPoints = generateLandPoints();
+
+// Satellites
+const satellites = [];
+for(let i = 0; i < 8; i++){
+    satellites.push({
+        inclination: (20 + Math.random() * 60) * Math.PI / 180,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.15 + Math.random() * 0.2,
+        altitude: 1.2 + Math.random() * 0.35,
+        size: 1.5 + Math.random() * 1,
+        trail: []
+    });
+}
+
+// Grid lines (meridians and parallels)
+function drawGlobe(t){
+    const rotY = t * 0.08 + (mouse.x - 0.5) * 0.6;
+    const tiltX = -0.3 + (mouse.y - 0.5) * 0.3;
+
+    const cosRY = Math.cos(rotY);
+    const sinRY = Math.sin(rotY);
+    const cosTX = Math.cos(tiltX);
+    const sinTX = Math.sin(tiltX);
+
+    function project(lat, lng, alt){
+        const r = radius * (alt || 1);
+        const x3 = r * Math.cos(lat) * Math.sin(lng);
+        const y3 = r * Math.sin(lat);
+        const z3 = r * Math.cos(lat) * Math.cos(lng);
+
+        // Rotate Y
+        const x1 = x3 * cosRY + z3 * sinRY;
+        const z1 = -x3 * sinRY + z3 * cosRY;
+        // Tilt X
+        const y1 = y3 * cosTX - z1 * sinTX;
+        const z2 = y3 * sinTX + z1 * cosTX;
+
+        return {x: cx + x1, y: cy - y1, z: z2, visible: z2 > 0};
+    }
+
+    // Background glow
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 2.5);
+    grd.addColorStop(0, 'rgba(0,229,160,0.02)');
+    grd.addColorStop(0.3, 'rgba(0,229,160,0.008)');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Globe outline
     ctx.beginPath();
-    ctx.arc(cx,cy,R,0,Math.PI*2);
-    ctx.strokeStyle='rgba(0,229,160,0.06)';
-    ctx.lineWidth=1;
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0,229,160,0.06)';
+    ctx.lineWidth = 1;
     ctx.stroke();
-    
-    // Latitude lines
-    for(let i=0;i<lats.length;i++){
-        ctx.beginPath();
-        let started=false;
-        for(let lng=0;lng<=Math.PI*2;lng+=0.1){
-            const p=proj(lats[i],lng,time);
-            if(p.v){
-                if(!started){ctx.moveTo(p.x,p.y);started=true;}
-                else ctx.lineTo(p.x,p.y);
-            }else started=false;
-        }
-        ctx.strokeStyle='rgba(0,229,160,0.03)';
-        ctx.lineWidth=0.5;
-        ctx.stroke();
-    }
-    
-    // Longitude lines
-    for(let i=0;i<lngs.length;i++){
-        ctx.beginPath();
-        let started=false;
-        for(let lat=-Math.PI/2;lat<=Math.PI/2;lat+=0.05){
-            const p=proj(lat,lngs[i],time);
-            if(p.v){
-                if(!started){ctx.moveTo(p.x,p.y);started=true;}
-                else ctx.lineTo(p.x,p.y);
-            }else started=false;
-        }
-        ctx.strokeStyle='rgba(0,229,160,0.04)';
-        ctx.lineWidth=0.5;
-        ctx.stroke();
-    }
-    
-    // Land masses
-    for(let i=0;i<landRad.length;i++){
-        const p=proj(landRad[i].lat,landRad[i].lng,time);
-        if(!p.v)continue;
-        
-        const depth=Math.max(0,p.z/R);
-        const alpha=0.1+depth*0.35;
-        ctx.fillStyle='rgba(0,229,160,'+alpha+')';
-        ctx.fillRect(p.x-1.5,p.y-1.5,3,3);
-    }
-    
-    requestAnimationFrame(draw);
-}
-draw();
 
+    // Atmospheric glow
+    const atm = ctx.createRadialGradient(cx, cy, radius * 0.95, cx, cy, radius * 1.15);
+    atm.addColorStop(0, 'rgba(0,229,160,0.03)');
+    atm.addColorStop(0.5, 'rgba(0,229,160,0.015)');
+    atm.addColorStop(1, 'transparent');
+    ctx.fillStyle = atm;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Grid lines - meridians
+    for(let lng = -180; lng < 180; lng += 30){
+        ctx.beginPath();
+        let started = false;
+        for(let lat = -90; lat <= 90; lat += 3){
+            const p = project(lat * Math.PI / 180, lng * Math.PI / 180);
+            if(p.visible){
+                if(!started){ctx.moveTo(p.x, p.y); started = true;}
+                else ctx.lineTo(p.x, p.y);
+            } else { started = false; }
+        }
+        ctx.strokeStyle = 'rgba(0,229,160,0.025)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    }
+
+    // Grid lines - parallels
+    for(let lat = -60; lat <= 60; lat += 30){
+        ctx.beginPath();
+        let started = false;
+        for(let lng = 0; lng <= 360; lng += 3){
+            const p = project(lat * Math.PI / 180, lng * Math.PI / 180);
+            if(p.visible){
+                if(!started){ctx.moveTo(p.x, p.y); started = true;}
+                else ctx.lineTo(p.x, p.y);
+            } else { started = false; }
+        }
+        ctx.strokeStyle = 'rgba(0,229,160,0.02)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    }
+
+    // Land points
+    for(const pt of landPoints){
+        const p = project(pt.lat, pt.lng);
+        if(!p.visible) continue;
+        const depth = Math.max(0, p.z / radius);
+        const alpha = 0.08 + depth * 0.22;
+        ctx.fillStyle = `rgba(0,229,160,${alpha})`;
+        ctx.fillRect(p.x - 0.8, p.y - 0.8, 1.6, 1.6);
+    }
+
+    // Satellites
+    for(const sat of satellites){
+        const angle = t * sat.speed + sat.phase;
+        const lat = Math.asin(Math.sin(sat.inclination) * Math.sin(angle));
+        const lng = Math.atan2(
+            Math.cos(sat.inclination) * Math.sin(angle),
+            Math.cos(angle)
+        );
+        const p = project(lat, lng, sat.altitude);
+
+        // Trail
+        sat.trail.push({x: p.x, y: p.y, z: p.z, v: p.visible, a: 1});
+        if(sat.trail.length > 30) sat.trail.shift();
+
+        // Draw trail
+        for(let i = 0; i < sat.trail.length - 1; i++){
+            const tp = sat.trail[i];
+            if(!tp.v) continue;
+            const alpha = (i / sat.trail.length) * 0.15;
+            ctx.beginPath();
+            ctx.arc(tp.x, tp.y, 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0,229,160,${alpha})`;
+            ctx.fill();
+        }
+
+        // Draw satellite
+        if(p.visible){
+            // Glow
+            const sg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 12);
+            sg.addColorStop(0, 'rgba(0,229,160,0.25)');
+            sg.addColorStop(0.5, 'rgba(0,229,160,0.05)');
+            sg.addColorStop(1, 'transparent');
+            ctx.fillStyle = sg;
+            ctx.fillRect(p.x - 12, p.y - 12, 24, 24);
+
+            // Core
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, sat.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,229,160,0.7)';
+            ctx.fill();
+
+            // Connection line to globe surface
+            const sp = project(lat, lng, 1);
+            if(sp.visible){
+                ctx.beginPath();
+                ctx.moveTo(sp.x, sp.y);
+                ctx.lineTo(p.x, p.y);
+                ctx.strokeStyle = 'rgba(0,229,160,0.04)';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+
+                // Surface point
+                ctx.beginPath();
+                ctx.arc(sp.x, sp.y, 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,229,160,0.15)';
+                ctx.fill();
+            }
+        }
+    }
+
+    // Data connection arcs (occasional flashes between satellites)
+    if(Math.sin(t * 0.7) > 0.8){
+        for(let i = 0; i < satellites.length - 1; i += 3){
+            const s1 = satellites[i];
+            const s2 = satellites[i + 1];
+            const a1 = t * s1.speed + s1.phase;
+            const a2 = t * s2.speed + s2.phase;
+            const p1 = project(
+                Math.asin(Math.sin(s1.inclination) * Math.sin(a1)),
+                Math.atan2(Math.cos(s1.inclination) * Math.sin(a1), Math.cos(a1)),
+                s1.altitude
+            );
+            const p2 = project(
+                Math.asin(Math.sin(s2.inclination) * Math.sin(a2)),
+                Math.atan2(Math.cos(s2.inclination) * Math.sin(a2), Math.cos(a2)),
+                s2.altitude
+            );
+            if(p1.visible && p2.visible){
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                const mx = (p1.x + p2.x) / 2;
+                const my = (p1.y + p2.y) / 2 - 30;
+                ctx.quadraticCurveTo(mx, my, p2.x, p2.y);
+                const flash = (Math.sin(t * 3) + 1) * 0.04;
+                ctx.strokeStyle = `rgba(0,229,160,${flash})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+    }
+}
+
+// Floating particles
+const particles = [];
+for(let i = 0; i < 40; i++){
+    particles.push({
+        x: Math.random() * 2000,
+        y: Math.random() * 2000,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        size: Math.random() * 1.2,
+        alpha: Math.random() * 0.08
+    });
+}
+
+function drawParticles(){
+    for(const p of particles){
+        p.x += p.vx;
+        p.y += p.vy;
+        if(p.x < 0) p.x = W;
+        if(p.x > W) p.x = 0;
+        if(p.y < 0) p.y = H;
+        if(p.y > H) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,229,160,${p.alpha})`;
+        ctx.fill();
+    }
+}
+
+function frame(){
+    ctx.clearRect(0, 0, W, H);
+
+    // Deep background
+    ctx.fillStyle = '#050508';
+    ctx.fillRect(0, 0, W, H);
+
+    drawParticles();
+    drawGlobe(time);
+
+    time += 0.016;
+    requestAnimationFrame(frame);
+}
+
+frame();
 })();
 </script>
-
+</body>
 <script>
-// Back button handler for iframe
 if (window.parent !== window) {
     history.pushState(null, null, location.href);
     window.addEventListener('popstate', function(e) {
@@ -204,6 +393,4 @@ if (window.parent !== window) {
     });
 }
 </script>
-
-</body>
 </html>

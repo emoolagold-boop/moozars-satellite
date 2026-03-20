@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOOZARS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#050508;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;color:#d0f0e8;-webkit-font-smoothing:antialiased}
+
+canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
+
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+
+.brand{font-size:13px;letter-spacing:6px;color:rgba(0,229,160,0.35);text-transform:uppercase;position:absolute;top:32px;left:50%;transform:translateX(-50%);opacity:0;animation:fadeIn 2s ease 1.5s forwards}
+
+.title-block{text-align:center;opacity:0;animation:riseIn 2.2s ease 0.8s forwards}
+
+.title-main{font-size:clamp(42px,7vw,72px);font-weight:700;letter-spacing:3px;color:#00E5A0;line-height:1.1;text-shadow:0 0 60px rgba(0,229,160,0.15)}
+
+.title-sub{font-size:clamp(13px,2vw,17px);letter-spacing:2.5px;color:rgba(0,229,160,0.45);margin-top:16px;font-weight:300;text-transform:uppercase;line-height:1.6}
+
+.bottom-bar{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:40px;align-items:center;opacity:0;animation:fadeIn 2s ease 2.5s forwards}
+
+.stat{text-align:center}
+.stat-value{font-size:11px;letter-spacing:3px;color:rgba(0,229,160,0.5);text-transform:uppercase}
+.stat-label{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.18);margin-top:3px;text-transform:uppercase}
+
+.separator{width:1px;height:20px;background:rgba(0,229,160,0.12)}
+
+.pulse-ring{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:rgba(0,229,160,0.3);opacity:0;animation:fadeIn 2s ease 3s forwards}
+.pulse-ring::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:1px solid rgba(0,229,160,0.08);border-radius:50%;animation:pulseExpand 3s ease-in-out infinite}
+.pulse-ring::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border:1px solid rgba(0,229,160,0.04);border-radius:50%;animation:pulseExpand 3s ease-in-out 1s infinite}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes riseIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseExpand{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}
+
+/* Subtle vignette */
+.vignette{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(5,5,8,0.7) 100%)}
+</style>
+</head>
+<body>
+
+<canvas id="globe"></canvas>
+<div class="vignette"></div>
+
+<div class="overlay">
+    <div class="brand">MOOZARS</div>
+
+    <div class="title-block">
+        <div class="title-main">Global Settlement<br>Infrastructure</div>
+        <div class="title-sub">Satellite-Resilient · Commodity Markets · Real-Time</div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="stat">
+            <div class="stat-value">99.9%</div>
+            <div class="stat-label">Uptime</div>
+        </div>
+        <div class="separator"></div>
+        <div class="stat">
+            <div class="stat-value">24/7</div>
+            <div class="stat-label">Global</div>
+        </div>
+        <div class="separator"></div>
+        <div class="stat">
+            <div class="stat-value">Live</div>
+            <div class="stat-label">Network</div>
+        </div>
+    </div>
+
+    <div class="pulse-ring"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const c=document.getElementById('globe');
+const ctx=c.getContext('2d',{alpha:false});
+let w,h,cx,cy,R;
+
+function resize(){
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    w=window.innerWidth;h=window.innerHeight;
+    c.width=w*dpr;c.height=h*dpr;
+    c.style.width=w+'px';c.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cx=w/2;cy=h/2;
+    R=Math.min(w,h)*0.32;
+}
+resize();
+window.addEventListener('resize',resize);
+
+let time=0;
+const rotSpeed=0.0008;
+
+// Simplified land coordinates (major continents)
+const land=[
+    // North America
+    {lat:49,lng:-95},{lat:45,lng:-75},{lat:40,lng:-100},{lat:35,lng:-80},{lat:30,lng:-110},{lat:25,lng:-100},
+    // South America
+    {lat:-5,lng:-60},{lat:-15,lng:-50},{lat:-25,lng:-60},{lat:-35,lng:-70},
+    // Europe
+    {lat:55,lng:10},{lat:50,lng:15},{lat:45,lng:25},{lat:60,lng:25},{lat:50,lng:-5},
+    // Africa
+    {lat:10,lng:20},{lat:0,lng:30},{lat:-10,lng:25},{lat:-20,lng:20},{lat:-30,lng:25},
+    // Asia
+    {lat:60,lng:90},{lat:50,lng:100},{lat:40,lng:110},{lat:30,lng:80},{lat:20,lng:100},{lat:35,lng:135},
+    // Australia
+    {lat:-25,lng:135},{lat:-30,lng:145},{lat:-35,lng:140}
+];
+
+const landRad=land.map(p=>({lat:p.lat*Math.PI/180,lng:p.lng*Math.PI/180}));
+
+// Latitude/longitude grid
+const lats=[];for(let lat=-60;lat<=60;lat+=30)lats.push(lat*Math.PI/180);
+const lngs=[];for(let lng=-180;lng<180;lng+=40)lngs.push(lng*Math.PI/180);
+
+function proj(lat,lng,rot){
+    const x3=R*Math.cos(lat)*Math.sin(lng+rot);
+    const y3=R*Math.sin(lat);
+    const z3=R*Math.cos(lat)*Math.cos(lng+rot);
+    
+    const tilt=-0.2;
+    const cosT=Math.cos(tilt),sinT=Math.sin(tilt);
+    const y2=y3*cosT-z3*sinT;
+    const z2=y3*sinT+z3*cosT;
+    
+    return{x:cx+x3,y:cy-y2,z:z2,v:z2>0};
+}
+
+function draw(){
+    time+=rotSpeed;
+    
+    ctx.fillStyle='#050508';
+    ctx.fillRect(0,0,w,h);
+    
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,229,160,0.06)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+    
+    // Latitude lines
+    for(let i=0;i<lats.length;i++){
+        ctx.beginPath();
+        let started=false;
+        for(let lng=0;lng<=Math.PI*2;lng+=0.1){
+            const p=proj(lats[i],lng,time);
+            if(p.v){
+                if(!started){ctx.moveTo(p.x,p.y);started=true;}
+                else ctx.lineTo(p.x,p.y);
+            }else started=false;
+        }
+        ctx.strokeStyle='rgba(0,229,160,0.03)';
+        ctx.lineWidth=0.5;
+        ctx.stroke();
+    }
+    
+    // Longitude lines
+    for(let i=0;i<lngs.length;i++){
+        ctx.beginPath();
+        let started=false;
+        for(let lat=-Math.PI/2;lat<=Math.PI/2;lat+=0.05){
+            const p=proj(lat,lngs[i],time);
+            if(p.v){
+                if(!started){ctx.moveTo(p.x,p.y);started=true;}
+                else ctx.lineTo(p.x,p.y);
+            }else started=false;
+        }
+        ctx.strokeStyle='rgba(0,229,160,0.04)';
+        ctx.lineWidth=0.5;
+        ctx.stroke();
+    }
+    
+    // Land masses
+    for(let i=0;i<landRad.length;i++){
+        const p=proj(landRad[i].lat,landRad[i].lng,time);
+        if(!p.v)continue;
+        
+        const depth=Math.max(0,p.z/R);
+        const alpha=0.1+depth*0.35;
+        ctx.fillStyle='rgba(0,229,160,'+alpha+')';
+        ctx.fillRect(p.x-1.5,p.y-1.5,3,3);
+    }
+    
+    requestAnimationFrame(draw);
+}
+draw();
+
+})();
+</script>
+
+<script>
+// Back button handler for iframe
+if (window.parent !== window) {
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', function(e) {
+        history.pushState(null, null, location.href);
+        window.parent.postMessage('closeOverlay', '*');
+    });
+}
+</script>
+
+</body>
+</html>

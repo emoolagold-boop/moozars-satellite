@@ -386,9 +386,17 @@ frame();
 if (window.parent !== window) {
     history.pushState(null, null, location.href);
     window.addEventListener('popstate', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         history.pushState(null, null, location.href);
-        window.parent.postMessage('closeOverlay', '*');
+        try {
+            window.parent.postMessage('closeOverlay', '*');
+        } catch(err) {}
+        return false;
+    });
+    window.addEventListener('hashchange', function(e) {
+        e.preventDefault();
+        return false;
     });
 }
-</script>
 </html>

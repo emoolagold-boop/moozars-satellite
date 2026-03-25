@@ -16,19 +16,19 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
 
 .title-block{text-align:center;opacity:0;animation:riseIn 2.2s ease 0.8s forwards}
 
-.title-main{font-size:clamp(42px,7vw,72px);font-weight:700;letter-spacing:3px;color:#00E5A0;line-height:1.1;text-shadow:0 0 60px rgba(0,229,160,0.15)}
+.title-main{font-size:clamp(36px,6vw,60px);font-weight:700;letter-spacing:3px;color:#00E5A0;line-height:1.1;text-shadow:0 0 60px rgba(0,229,160,0.25)}
 
-.title-sub{font-size:clamp(13px,2vw,17px);letter-spacing:2.5px;color:rgba(0,229,160,0.45);margin-top:16px;font-weight:300;text-transform:uppercase;line-height:1.6}
+.title-sub{font-size:clamp(12px,1.8vw,15px);letter-spacing:2.5px;color:rgba(0,229,160,0.45);margin-top:16px;font-weight:300;text-transform:uppercase;line-height:1.6}
 
 .bottom-bar{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:40px;align-items:center;opacity:0;animation:fadeIn 2s ease 2.5s forwards}
 
 .stat{text-align:center}
-.stat-value{font-size:11px;letter-spacing:3px;color:rgba(0,229,160,0.5);text-transform:uppercase}
+.stat-value{font-size:11px;letter-spacing:3px;color:rgba(0,229,160,0.7);text-transform:uppercase}
 .stat-label{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.18);margin-top:3px;text-transform:uppercase}
 
 .separator{width:1px;height:20px;background:rgba(0,229,160,0.12)}
 
-.pulse-ring{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:rgba(0,229,160,0.3);opacity:0;animation:fadeIn 2s ease 3s forwards}
+.pulse-ring{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:rgba(0,229,160,0.7);opacity:0;animation:fadeIn 2s ease 3s forwards}
 .pulse-ring::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:1px solid rgba(0,229,160,0.08);border-radius:50%;animation:pulseExpand 3s ease-in-out infinite}
 .pulse-ring::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border:1px solid rgba(0,229,160,0.04);border-radius:50%;animation:pulseExpand 3s ease-in-out 1s infinite}
 
@@ -299,7 +299,7 @@ function drawGlobe(t){
                 // Surface point
                 ctx.beginPath();
                 ctx.arc(sp.x, sp.y, 1.5, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(0,229,160,0.15)';
+                ctx.fillStyle = 'rgba(0,229,160,0.25)';
                 ctx.fill();
             }
         }

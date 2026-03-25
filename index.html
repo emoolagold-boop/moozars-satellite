@@ -6,13 +6,13 @@
 <title>MOOZARS</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#050508;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;color:#d0f0e8;-webkit-font-smoothing:antialiased}
+html,body{width:100%;height:100%;overflow:hidden;background:#0c0c14;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;color:#d0f0e8;-webkit-font-smoothing:antialiased}
 
 canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
 
 .overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
 
-.brand{font-size:13px;letter-spacing:6px;color:rgba(0,229,160,0.35);text-transform:uppercase;position:absolute;top:32px;left:50%;transform:translateX(-50%);opacity:0;animation:fadeIn 2s ease 1.5s forwards}
+.brand{font-family:'ASAR',serif;font-size:13px;letter-spacing:6px;color:rgba(0,229,160,0.45);animation:brandPulse 3s ease-in-out infinite;text-transform:uppercase;position:absolute;top:32px;left:50%;transform:translateX(-50%);opacity:0;animation:fadeIn 2s ease 1.5s forwards}
 
 .title-block{text-align:center;opacity:0;animation:riseIn 2.2s ease 0.8s forwards}
 
@@ -30,11 +30,14 @@ canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1}
 
 .pulse-ring{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:rgba(0,229,160,0.7);opacity:0;animation:fadeIn 2s ease 3s forwards}
 .pulse-ring::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border:1px solid rgba(0,229,160,0.08);border-radius:50%;animation:pulseExpand 3s ease-in-out infinite}
+@keyframes brandPulse{0%,100%{opacity:0.45}50%{opacity:0.75}}
 .pulse-ring::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;border:1px solid rgba(0,229,160,0.04);border-radius:50%;animation:pulseExpand 3s ease-in-out 1s infinite}
+@keyframes brandPulse{0%,100%{opacity:0.45}50%{opacity:0.75}}
 
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes riseIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulseExpand{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:1}50%{transform:translate(-50%,-50%) scale(1.5);opacity:0}}
+@keyframes brandPulse{0%,100%{opacity:0.45}50%{opacity:0.75}}
 
 /* Subtle vignette */
 .vignette{position:fixed;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 40%,rgba(5,5,8,0.7) 100%)}
